@@ -11,6 +11,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     error Raffle__NotEnoughTimeHasPassed();
     error Raffle__RaffleHasNoBalance();
     error Raffle__RaffleHasNoPlayers();
+    error Raffle__TransferFailed();
 
     /* Type declarations */
     enum State {
@@ -27,13 +28,15 @@ contract Raffle is VRFConsumerBaseV2Plus {
     uint32 private constant NUM_WORDS = 1;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
 
-    address[] private s_players;
+    address payable[] private s_players;
     uint256 private s_lastTimeStamp;
+    address private s_recentWinner;
     State private s_state;
 
     /* Events */
     event NewRaffle(address indexed sender);
     event WinnerRequested(address indexed sender);
+    event WinnerPicked(address indexed winner);
 
     /* Constructor */
     constructor(
@@ -64,7 +67,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         }
 
         // Effects
-        s_players.push(msg.sender);
+        s_players.push(payable(msg.sender));
 
         // Interactions
         emit NewRaffle(msg.sender);
@@ -106,7 +109,34 @@ contract Raffle is VRFConsumerBaseV2Plus {
         emit WinnerRequested(msg.sender);
     }
 
-    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {}
+    function fulfillRandomWords(
+        uint256,
+        /* requestId */
+        uint256[] calldata randomWords
+    )
+        internal
+        override
+    {
+        // Effects
+        uint256 indexOfWinner = randomWords[0] % s_players.length;
+        address payable winner = s_players[indexOfWinner];
+        uint256 amount = address(this).balance;
+
+        s_recentWinner = winner;
+        s_state = Raffle.State.Open;
+        s_players = new address payable[](0);
+        s_lastTimeStamp = block.timestamp;
+
+        // Interactions
+        (bool success,) = winner.call{value: amount}("");
+        if (!success) {
+            revert Raffle__TransferFailed();
+        }
+
+        emit WinnerPicked(winner);
+    }
+
+    /* Receive & Fallback */
 
     /* Getter functions */
 }
