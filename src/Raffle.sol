@@ -7,7 +7,7 @@ import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/V
 contract Raffle is VRFConsumerBaseV2Plus {
     /* Errors */
     error Raffle__NotEnoughEthSent();
-    error Raffle__RaffleCurrentlyCalculating();
+    error Raffle__RaffleNotOpened();
 
     /* Type declarations */
     enum State {
@@ -24,7 +24,6 @@ contract Raffle is VRFConsumerBaseV2Plus {
     uint32 private constant NUM_WORDS = 1;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
 
-    uint256 private constant MIN_AMOUNT = 0.1 ether;
     address[] private s_players;
     uint256 private s_lastTimeStamp;
     State private s_state;
@@ -51,12 +50,29 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     /* Functions */
     function enterRaffle() external payable {
-        if (msg.value < MIN_AMOUNT) {
+        // Checks
+        if (msg.value < i_entranceFee) {
             revert Raffle__NotEnoughEthSent();
         }
+
+        if (s_state != Raffle.State.Open) {
+            revert Raffle__RaffleNotOpened();
+        }
+
+        // Effects
+        s_players.push(msg.sender);
+
+        // Interactions
+        emit NewRaffle(msg.sender);
     }
 
-    function requestWinner() external {}
+    function requestWinner() external {
+        // Checks
+
+        // Effects
+
+        // Interactions
+    }
 
     function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {}
 
