@@ -12,6 +12,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     error Raffle__RaffleHasNoBalance();
     error Raffle__RaffleHasNoPlayers();
     error Raffle__TransferFailed();
+    error Raffle__NoDirectTransfersAllowed();
 
     /* Type declarations */
     enum State {
@@ -137,6 +138,13 @@ contract Raffle is VRFConsumerBaseV2Plus {
     }
 
     /* Receive & Fallback */
+    receive() external payable {
+        revert Raffle__NoDirectTransfersAllowed();
+    }
+
+    fallback() external payable {
+        revert Raffle__NoDirectTransfersAllowed();
+    }
 
     /* Getter functions */
 }
