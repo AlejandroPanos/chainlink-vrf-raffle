@@ -14,6 +14,8 @@ contract TestRaffle is Test {
     /* Local variables */
     address USER = makeAddr("USER");
     uint256 public constant DEAL = 10 ether;
+    uint256 public constant SEND_VALUE = 1 ether;
+    uint256 public constant LOWER_SEND_VALUE = 0.001 ether;
 
     uint256 entranceFee;
     uint256 interval;
@@ -44,5 +46,54 @@ contract TestRaffle is Test {
     /* General testing functions */
     function testRaffleStartsInOpenState() public view {
         assertEq(uint256(raffle.getRaffleState()), uint256(Raffle.State.Open));
+    }
+
+    /* Enter raffle tests */
+    function testRevertsIfNotEnoughEthSent() public {
+        // Arrange
+        vm.prank(USER);
+        vm.expectRevert(Raffle.Raffle__NotEnoughEthSent.selector);
+
+        // Act / Assert
+        raffle.enterRaffle{value: LOWER_SEND_VALUE}();
+    }
+
+    function testRevertsIfStateNotOpened() public {
+        // Arrange
+        vm.prank(USER);
+        raffle.enterRaffle{value: SEND_VALUE}();
+
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        raffle.requestWinner();
+
+        vm.prank(USER);
+        vm.expectRevert(Raffle.Raffle__RaffleNotOpened.selector);
+
+        // Act / Assert
+        raffle.enterRaffle{value: SEND_VALUE}();
+    }
+
+    function testPlayerGetsAddedToArray() public {
+        // Arrange
+        vm.prank(USER);
+
+        // Act
+        raffle.enterRaffle{value: SEND_VALUE}();
+
+        // Assert
+        assertEq(raffle.getPlayer(0), USER);
+    }
+
+    function testEmitsNewRaffleWhenRaffleEntered() public {
+        // Arrange
+        vm.prank(USER);
+
+        // Act
+        vm.expectEmit(true, false, false, false);
+        emit NewRaffle(USER);
+
+        // Assert
+        raffle.enterRaffle{value: SEND_VALUE}();
     }
 }
