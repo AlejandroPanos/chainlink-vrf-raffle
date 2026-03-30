@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {Raffle} from "src/Raffle.sol";
 import {DeployRaffle} from "script/DeployRaffle.s.sol";
 import {HelperConfig} from "script/HelperConfig.s.sol";
+import {VRFCoordinatorV2_5Mock} from "@chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
 
 contract TestRaffle is Test {
     /* Instantiate new contracts */
@@ -161,5 +162,58 @@ contract TestRaffle is Test {
         // Assert
         vm.prank(USER);
         raffle.requestWinner();
+    }
+
+    /* Fulfill random words tests */
+    function testFulfillRandomWordsPicksWinner() public {
+        // Arrange
+        vm.prank(USER);
+        raffle.enterRaffle{value: SEND_VALUE}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        // Act
+        vm.prank(USER);
+        raffle.requestWinner();
+
+        VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(1, address(raffle));
+
+        // Assert
+        assertEq(raffle.getRecentWinner(), USER);
+    }
+
+    function testFulfillRandomWordsPicksWinnerAndPays() public {
+        // Arrange
+        vm.prank(USER);
+        raffle.enterRaffle{value: SEND_VALUE}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        // Act
+        vm.prank(USER);
+        raffle.requestWinner();
+
+        VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(1, address(raffle));
+
+        // Assert
+        assertEq(raffle.getContractBalance(), 0);
+    }
+
+    function testEmitsWinnerPicked() public {
+        // Arrange
+        vm.prank(USER);
+        raffle.enterRaffle{value: SEND_VALUE}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        // Act
+        vm.prank(USER);
+        raffle.requestWinner();
+
+        vm.expectEmit(true, false, false, false);
+        emit WinnerPicked(USER);
+
+        // Assert
+        VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(1, address(raffle));
     }
 }

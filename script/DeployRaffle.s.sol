@@ -17,7 +17,7 @@ contract DeployRaffle is Script {
             config.entranceFee, config.interval, config.keyHash, subId, config.callbackGasLimit, config.vrfCoordinator
         );
 
-        VRFCoordinatorV2_5Mock(config.vrfCoordinator).fundSubscription(subId, 5 ether);
+        VRFCoordinatorV2_5Mock(config.vrfCoordinator).fundSubscription(subId, 5 ether * 100);
         VRFCoordinatorV2_5Mock(config.vrfCoordinator).addConsumer(subId, address(raffle));
         vm.stopBroadcast();
 
