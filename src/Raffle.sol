@@ -84,12 +84,12 @@ contract Raffle is VRFConsumerBaseV2Plus {
             revert Raffle__NotEnoughTimeHasPassed();
         }
 
-        if (address(this).balance == 0) {
-            revert Raffle__RaffleHasNoBalance();
-        }
-
         if (s_players.length == 0) {
             revert Raffle__RaffleHasNoPlayers();
+        }
+
+        if (address(this).balance == 0) {
+            revert Raffle__RaffleHasNoBalance();
         }
 
         // Effects

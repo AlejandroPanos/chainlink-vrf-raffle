@@ -96,4 +96,70 @@ contract TestRaffle is Test {
         // Assert
         raffle.enterRaffle{value: SEND_VALUE}();
     }
+
+    /* Request winner tests */
+    function testRevertsIfStateNotOpenedWhenCalled() public {
+        // Arrange
+        vm.prank(USER);
+        raffle.enterRaffle{value: SEND_VALUE}();
+
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        raffle.requestWinner();
+
+        vm.prank(USER);
+        vm.expectRevert(Raffle.Raffle__RaffleNotOpened.selector);
+
+        // Act / Assert
+        raffle.requestWinner();
+    }
+
+    function testRevertsIfNotEnoughTimeHasPassed() public {
+        // Arrange
+        vm.prank(USER);
+        raffle.enterRaffle{value: SEND_VALUE}();
+        vm.expectRevert(Raffle.Raffle__NotEnoughTimeHasPassed.selector);
+
+        // Act / Assert
+        raffle.requestWinner();
+    }
+
+    function testRevertsIfNoPlayersAddedToArray() public {
+        // Arrange
+        vm.prank(USER);
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        vm.expectRevert(Raffle.Raffle__RaffleHasNoPlayers.selector);
+
+        // Act / Assert
+        raffle.requestWinner();
+    }
+
+    function testSetsStateToCalculating() public {
+        // Arrange / Act
+        vm.startPrank(USER);
+        raffle.enterRaffle{value: SEND_VALUE}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        raffle.requestWinner();
+        vm.stopPrank();
+
+        // Assert
+        assertEq(uint256(raffle.getRaffleState()), uint256(Raffle.State.Calculating));
+    }
+
+    function testEmitsWinnerRequested() public {
+        // Arrange
+        vm.prank(USER);
+        raffle.enterRaffle{value: SEND_VALUE}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        vm.expectEmit(true, false, false, false);
+        emit WinnerRequested(USER);
+
+        // Assert
+        vm.prank(USER);
+        raffle.requestWinner();
+    }
 }
