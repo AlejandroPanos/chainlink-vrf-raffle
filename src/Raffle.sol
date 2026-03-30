@@ -8,6 +8,9 @@ contract Raffle is VRFConsumerBaseV2Plus {
     /* Errors */
     error Raffle__NotEnoughEthSent();
     error Raffle__RaffleNotOpened();
+    error Raffle__NotEnoughTimeHasPassed();
+    error Raffle__RaffleHasNoBalance();
+    error Raffle__RaffleHasNoPlayers();
 
     /* Type declarations */
     enum State {
@@ -30,6 +33,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     /* Events */
     event NewRaffle(address indexed sender);
+    event WinnerRequested(address indexed sender);
 
     /* Constructor */
     constructor(
@@ -68,10 +72,38 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     function requestWinner() external {
         // Checks
+        if (s_state != Raffle.State.Open) {
+            revert Raffle__RaffleNotOpened();
+        }
+
+        if ((block.timestamp - s_lastTimeStamp) < i_interval) {
+            revert Raffle__NotEnoughTimeHasPassed();
+        }
+
+        if (address(this).balance == 0) {
+            revert Raffle__RaffleHasNoBalance();
+        }
+
+        if (s_players.length == 0) {
+            revert Raffle__RaffleHasNoPlayers();
+        }
 
         // Effects
+        s_state = Raffle.State.Calculating;
+
+        s_vrfCoordinator.requestRandomWords(
+            VRFV2PlusClient.RandomWordsRequest({
+                keyHash: i_keyHash,
+                subId: i_subId,
+                requestConfirmations: REQUEST_CONFIRMATIONS,
+                callbackGasLimit: i_callbackGasLimit,
+                numWords: NUM_WORDS,
+                extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: false}))
+            })
+        );
 
         // Interactions
+        emit WinnerRequested(msg.sender);
     }
 
     function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {}
