@@ -216,4 +216,55 @@ contract TestRaffle is Test {
         // Assert
         VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(1, address(raffle));
     }
+
+    /* Getter function tests */
+    function testGetEntranceFee() public view {
+        assertEq(raffle.getEntranceFee(), entranceFee);
+    }
+
+    function testGetInterval() public view {
+        assertEq(raffle.getInterval(), interval);
+    }
+
+    function testGetKeyHash() public view {
+        assertEq(raffle.getKeyHash(), keyHash);
+    }
+
+    function testGetCallbackGasLimit() public view {
+        assertEq(raffle.getCallbackGasLimit(), callbackGasLimit);
+    }
+
+    function testGetNumWords() public view {
+        assertEq(raffle.getNumWords(), 1);
+    }
+
+    function testGetReqConfirmations() public view {
+        assertEq(raffle.getReqConfirmations(), 3);
+    }
+
+    function testGetRaffleStateIsOpenOnDeploy() public view {
+        assertEq(uint256(raffle.getRaffleState()), uint256(Raffle.State.Open));
+    }
+
+    function testGetLastTimestamp() public view {
+        assertEq(raffle.getLastTimestamp(), block.timestamp);
+    }
+
+    function testGetContractBalanceIsZeroOnDeploy() public view {
+        assertEq(raffle.getContractBalance(), 0);
+    }
+
+    function testGetRecentWinnerIsZeroAddressOnDeploy() public view {
+        assertEq(raffle.getRecentWinner(), address(0));
+    }
+
+    function testGetPlayerReturnsCorrectAddress() public {
+        vm.prank(USER);
+        raffle.enterRaffle{value: SEND_VALUE}();
+        assertEq(raffle.getPlayer(0), USER);
+    }
+
+    function testGetSubId() public view {
+        assertGt(raffle.getSubId(), 0);
+    }
 }
